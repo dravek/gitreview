@@ -51,6 +51,13 @@ Print version:
 ./gitreview --version
 ```
 
+Set the app version in one place:
+
+- edit `DefaultVersion` in `internal/version/version.go`
+- `./rebuild.sh` and `./release.sh` always build from that value
+- release archive filenames are sanitized if needed, but the app version itself is embedded exactly as written
+- the same version is used for `--version` output and the footer in the UI
+
 ## Install
 
 Install to `/usr/local/bin`:

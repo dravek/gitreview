@@ -9,15 +9,19 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_CACHE="$ROOT_DIR/.cache/go-build"
 OUTPUT_BIN="$ROOT_DIR/gitreview"
-VERSION="${VERSION:-$(git -C "$ROOT_DIR" describe --tags --always 2>/dev/null || echo dev)}"
 COMMIT="${COMMIT:-$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo unknown)}"
 DATE="${DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+
+VERSION="$(GOCACHE="$BUILD_CACHE" go run ./cmd/print-default-version)"
+if [[ -z "$VERSION" ]]; then
+  echo "Unable to read DefaultVersion from internal/version/version.go" >&2
+  exit 1
+fi
 
 sanitize_token() {
   printf '%s' "$1" | tr -cs 'A-Za-z0-9._:-' '_'
 }
 
-VERSION_SAFE="$(sanitize_token "$VERSION")"
 COMMIT_SAFE="$(sanitize_token "$COMMIT")"
 DATE_SAFE="$(sanitize_token "$DATE")"
 
@@ -25,12 +29,12 @@ mkdir -p "$BUILD_CACHE"
 
 echo "Building gitreview..."
 GOCACHE="$BUILD_CACHE" go build \
-  -ldflags "-X gitreview/internal/version.Version=${VERSION_SAFE} -X gitreview/internal/version.Commit=${COMMIT_SAFE} -X gitreview/internal/version.Date=${DATE_SAFE}" \
+  -ldflags "-X gitreview/internal/version.Version=${VERSION} -X gitreview/internal/version.Commit=${COMMIT_SAFE} -X gitreview/internal/version.Date=${DATE_SAFE}" \
   -o "$OUTPUT_BIN" \
   ./cmd/gitreview
 
 echo "Built: $OUTPUT_BIN"
-echo "Version: $VERSION_SAFE ($COMMIT_SAFE)"
+echo "Version: $VERSION ($COMMIT_SAFE)"
 
 if [[ "${1:-}" == "--install" ]]; then
   TARGET="/usr/local/bin/gitreview"

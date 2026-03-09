@@ -10,6 +10,7 @@ import (
 	ggit "gitreview/internal/git"
 	"gitreview/internal/repo"
 	"gitreview/internal/state"
+	"gitreview/internal/version"
 )
 
 func TestWindowResizeIgnoredAfterInitialSize(t *testing.T) {
@@ -160,6 +161,19 @@ func TestRepoPanelSwitchesActiveRepo(t *testing.T) {
 	got = updated.(Model)
 	if got.activeRepoIndex != 1 {
 		t.Fatalf("activeRepoIndex = %d, want 1", got.activeRepoIndex)
+	}
+}
+
+func TestRenderStatusIncludesVersionOnRight(t *testing.T) {
+	model := NewModel([]repo.Snapshot{{Info: repo.Info{Root: "/tmp/root"}, Commits: []state.Commit{{SHA: "1", ShortSHA: "1", Subject: "root"}}}}, ggit.Client{})
+	updated, _ := model.Update(tea.WindowSizeMsg{Width: 100, Height: 24})
+	got := updated.(Model)
+
+	status := got.renderStatus()
+	lines := strings.Split(strings.TrimRight(status, "\n"), "\n")
+	lastLine := lines[len(lines)-1]
+	if !strings.HasSuffix(lastLine, "v"+version.String()+" ") {
+		t.Fatalf("status line = %q, want suffix %q", lastLine, "v"+version.String()+" ")
 	}
 }
 

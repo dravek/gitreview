@@ -15,6 +15,7 @@ import (
 	ggit "gitreview/internal/git"
 	"gitreview/internal/repo"
 	"gitreview/internal/state"
+	"gitreview/internal/version"
 )
 
 const (
@@ -697,21 +698,36 @@ func (m Model) renderFullscreen() string {
 }
 
 func (m Model) renderStatus() string {
+	left := m.statusText()
+	right := "v" + version.String()
+	width := max(1, m.width-2)
+
+	leftWidth := lipgloss.Width(left)
+	rightWidth := lipgloss.Width(right)
+	if leftWidth+rightWidth+1 > width {
+		left = ansi.Truncate(left, max(1, width-rightWidth-1), "…")
+	}
+
+	padding := max(1, width-lipgloss.Width(left)-rightWidth)
+	return statusStyle.Render(left + strings.Repeat(" ", padding) + right)
+}
+
+func (m Model) statusText() string {
 	if m.filterMode {
-		return statusStyle.Render("/ " + m.filterQuery + "_")
+		return "/ " + m.filterQuery + "_"
 	}
 	if m.err != nil {
-		return statusStyle.Render(m.err.Error())
+		return m.err.Error()
 	}
 	switch m.focus {
 	case state.FocusRepos:
-		return statusStyle.Render("[repos]    j/k move  enter switch  r overlay  tab next  ? help  q quit")
+		return "[repos]    j/k move  enter switch  r overlay  tab next  ? help  q quit"
 	case state.FocusCommits:
-		return statusStyle.Render("[commits]  j/k move  space select  / filter  h scope  ] more  r repos  enter diff  tab next  f fullscreen  ? help  q quit")
+		return "[commits]  j/k move  space select  / filter  h history  ] more  r repos  enter diff  tab next  f fullscreen  ? help  q quit"
 	case state.FocusFiles:
-		return statusStyle.Render("[files]  j/k move  enter filter  esc clear  r repos  tab next  ? help  q quit")
+		return "[files]  j/k move  enter filter  esc clear  r repos  tab next  ? help  q quit"
 	default:
-		return statusStyle.Render("[diff]  j/k scroll  g/G top/bottom  PgUp/PgDn  r repos  tab next  f fullscreen  ? help  q quit")
+		return "[diff]  j/k scroll  g/G top/bottom  PgUp/PgDn  r repos  tab next  f fullscreen  ? help  q quit"
 	}
 }
 
